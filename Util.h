@@ -16,14 +16,16 @@
 
 #pragma once
 
-// Only Standard C++ headers here
+// Avoid anything but Standard C++ headers here
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <charconv>
 #include <concepts>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <span>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -112,7 +114,7 @@ private:
 
 namespace { // anonymous
 template< typename Target, typename Source >
-Target ToNumInternal( const Source* start, const Source* end, [[maybe_unused]] int base )
+constexpr Target ToNumImpl( const Source* start, const Source* end, [[maybe_unused]] int base )
 {
   auto t = Target{};
   if constexpr( std::is_floating_point_v< Target > )
@@ -129,21 +131,21 @@ Target ToNumInternal( const Source* start, const Source* end, [[maybe_unused]] i
 // supports data()/size(). Base unused for floating point.
 
 template< typename Target, typename Source >
-Target ToNum( const Source& source, int base = 10 )
-requires IsNumeric<Target>
+constexpr Target ToNum( const Source& source, int base = 10 )
+  requires IsNumeric<Target>
 {
   const auto* start = source.data();
   const auto* end = start + source.size();
-  return ToNumInternal<Target>( start, end, base );
+  return ToNumImpl<Target>( start, end, base );
 }
 
 template< typename Target, size_t N >
-Target ToNum( const char (&source)[N], int base = 10 )
-requires IsNumeric<Target>
+constexpr Target ToNum( const char (&source)[N], int base = 10 )
+  requires IsNumeric<Target>
 {
   const auto* start = source;
   const auto* end = start + N - 1;
-  return ToNumInternal<Target>( start, end, base );
+  return ToNumImpl<Target>( start, end, base );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -151,8 +153,8 @@ requires IsNumeric<Target>
 // Convert number to string. Source must be integer or floating point.
 
 template< typename Target, typename Number >
-Target ToStr( Number number, [[maybe_unused]] int base = 10 )
-requires Util::IsNumeric<Number>
+constexpr Target ToStr( Number number, [[maybe_unused]] int base = 10 )
+  requires Util::IsNumeric<Number>
 {
   // Avoid unnecessary allocation at the cost of a copy operation by putting initial 
   // result on the stack. Largest potential value is 64-bit base 2 = 64 characters, 
@@ -177,7 +179,7 @@ requires Util::IsNumeric<Number>
 }
 
 template< typename Number >
-std::string ToString( Number number, int base = 10 )
+constexpr std::string ToString( Number number, int base = 10 )
 {
   return ToStr<std::string>( number, base );
 }
@@ -188,26 +190,19 @@ std::string ToString( Number number, int base = 10 )
 
 constexpr bool IsBigEndian()
 {
-  // TODO replace with std::endian
-#ifdef _WIN32
-  return false;
-#else
-  return true;
-#endif
+  return std::endian::native == std::endian::big;
 
-  /*
-  constexpr static int32_t one = 1;
-  return ( *(const int8_t*)(&one) == 0);
-  */
+  // Alternative non-portable:
+  // constexpr static int32_t one = 1;
+  // return ( *(const int8_t*)(&one) == 0 );
 
-  /*
-  union {
-      uint32_t i32;
-      uint8_t  i8[ sizeof( i32 ) ];
-  } constexpr static kEndianCheck = { 0xAABBCCDD };
-
-  return x.i8[ 0 ] == 0xAA;
-  */
+  // Alternative non-portable:
+  // union {
+  //   uint32_t i32;
+  //   uint8_t  i8[ sizeof( i32 ) ];
+  // } constexpr static kEndianCheck = { 0xAABBCCDD };
+  //
+  // return kEndianCheck.i8[ 0 ] == 0xAA;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -257,13 +252,69 @@ constexpr T ToLittleEndian( T u )
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Four Character Code
+// Four Character Codes
 
-constexpr uint32_t FourCC( const char code[ 5 ] ) {
-  return uint32_t( ( code[ 3 ] << 24 ) |
-                   ( code[ 2 ] << 16 ) |
-                   ( code[ 1 ] <<  8 ) |
-                     code[ 0 ] );
+namespace { // anonymous
+template <typename ValType, typename Array>
+concept IsCByteArray = requires ( ValType valType, Array arr )
+{
+  requires std::is_array_v<Array>;
+  requires sizeof( ValType ) == 1;
+  requires std::is_integral_v<ValType>;
+};
+
+template <typename ValType, typename Cont>
+concept IsRandAccessByteContainer = requires ( ValType valType, Cont cont )
+{
+  requires std::random_access_iterator<typename Cont::iterator>;
+  requires std::same_as<ValType, typename Cont::value_type>;
+  requires sizeof( typename Cont::value_type ) == 1;
+  requires std::is_integral_v<typename Cont::value_type>;
+};
+
+// Worker function
+template <typename ValType, typename Array>
+  requires IsCByteArray<ValType, Array> || IsRandAccessByteContainer<ValType, Array>
+constexpr uint32_t FourCCImpl( const Array& arr )
+{
+  return uint32_t( ( arr[0]       ) |
+                   ( arr[1] <<  8 ) |
+                   ( arr[2] << 16 ) |
+                   ( arr[3] << 24 ) );
+}
+} // end namespace anonymous
+
+template <typename ValType>
+constexpr uint32_t FourCC( const ValType (&arr)[ 4 ] ) // non-null terminated code
+{
+  return FourCCImpl<ValType>( arr );
+}
+
+template <typename ValType>
+constexpr uint32_t FourCC( const ValType (&arr)[ 5 ] ) // null terminated code
+{
+  return FourCCImpl<ValType>( arr );
+}
+
+template <typename ValType, size_t N>
+  requires ( N >= 4 )
+constexpr uint32_t FourCC( const std::array<ValType, N>& arr )
+{
+  return FourCCImpl<ValType>( arr );
+}
+
+template <typename ValType, size_t N>
+  requires ( N >= 4 )
+constexpr uint32_t FourCC( std::span<ValType, N> span )
+{
+  return FourCCImpl<ValType>( span );
+}
+
+template <typename ValType>
+constexpr uint32_t FourCC( const std::basic_string<ValType>& str )
+{
+  assert( str.size() >= 4 );
+  return FourCCImpl<ValType>( str );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -286,7 +337,7 @@ constexpr uint32_t FourCC( const char code[ 5 ] ) {
 // The code is complicated, but a good compiler will optimize away the loops
 
 template <uint8_t kBitsPerByte, typename T >
-T PackBits( T sourceInt )
+constexpr T PackBits( T sourceInt )
 {
   static_assert( kBitsPerByte <= CHAR_BIT );
   static_assert( kBitsPerByte > 0 );
@@ -350,7 +401,7 @@ T PackBits( T sourceInt )
 //    ( ( sourceInt & 0b00000000000000000000000001111111 ) << 0 );
 
 template <uint8_t kBits, typename T >
-T UnpackBits( T sourceInt )
+constexpr T UnpackBits( T sourceInt )
 {
   static_assert( kBits <= CHAR_BIT );
   if constexpr( kBits == CHAR_BIT )

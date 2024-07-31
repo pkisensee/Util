@@ -56,7 +56,7 @@ concept IsContainer = requires( Container a, const Container c )
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Definitions in WinUtil library
+// Definitions in WinShim library
 
 class Window;
 using FileList = std::vector<std::filesystem::path>;
@@ -70,7 +70,7 @@ FileList GetFileDialog( const Window& parent );
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Generic window object; definition in WinWindow.cpp etc.
+// Generic window object; definition in WinShim library
 
 class Window
 {
@@ -86,12 +86,12 @@ public:
 private:
   class Impl;
   using ImplDeleter = void ( * )( Impl* );
-  std::unique_ptr<Impl, ImplDeleter> mImpl;
+  std::unique_ptr<Impl, ImplDeleter> impl_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Generic event signalling object; definition in WinEvent.cpp etc.
+// Generic event signalling object; definition in WinShim library
 
 class Event
 {
@@ -107,7 +107,7 @@ public:
 private:
   class Impl;
   using ImplDeleter = void (*)( Impl* );
-  std::unique_ptr<Impl, ImplDeleter> mImpl;
+  std::unique_ptr<Impl, ImplDeleter> impl_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

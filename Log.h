@@ -37,9 +37,9 @@
 namespace PKIsensee
 {
 
-constexpr size_t kLogBufferSize = 2048;
-constexpr size_t kMaxStatusSize = 1024;
-constexpr size_t kTimeBuffer = 26;
+constexpr uint32_t kLogBufferSize = 2048;
+constexpr uint32_t kMaxStatusSize = 1024;
+constexpr uint32_t kTimeBuffer = 26;
 constexpr const char* kDefaultLogFileNames = "Log";
 
 enum class LogType
@@ -187,19 +187,19 @@ public:
     LogFileInfo li = kLogFileInfo.at( logType );
 
     // Format the final output string with leading status if required
-    size_t statusSize = 0;
+    uint32_t statusSize = 0;
     b = buffer;
     if( li.addStatusPrefix && !status_.empty() )
     {
       static_assert( kMaxStatusSize < kLogBufferSize );
-      statusSize = std::min( status_.size(), kMaxStatusSize );
+      statusSize = std::min( static_cast<uint32_t>( status_.size() ), kMaxStatusSize );
       std::memcpy( b, status_.data(), statusSize );
       b += statusSize;
       *b++ = ':';
       *b++ = ' ';
       statusSize += 2; // colon and space
     }
-    auto replaceChars = static_cast<size_t>( r - replace );
+    auto replaceChars = static_cast<uint32_t>( r - replace );
     auto logTextSize = std::min( replaceChars, kLogBufferSize - statusSize );
     std::memcpy( b, replace, logTextSize );
     b += logTextSize;

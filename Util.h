@@ -70,6 +70,29 @@ FileList GetFileDialog( const Window& parent );
 
 ///////////////////////////////////////////////////////////////////////////////
 //
+// Validation and failure handler
+//
+// Use cases:
+// 
+// If expression is false, breaks if debugger attached, logs error, and 
+// returns value of expression
+// 
+//   if ( !PK_VALID( value == 42 ) ) 
+//     return false
+//
+// If expression is false, breaks if debugger attached, logs error, and throws
+//
+//   PK_IFINVALID_THROW( value == 42 );
+
+#define PK_VALID(expr) ((!!(expr)) || \
+                        Util::FailureHandler( #expr, __FILE__, __LINE__, false ))
+#define PK_IFINVALID_THROW(expr) ((!!(expr)) || \
+                        Util::FailureHandler( #expr, __FILE__, __LINE__, true ))
+
+bool FailureHandler( const char* expr, const char* fileName, int lineNum, bool doThrow );
+
+///////////////////////////////////////////////////////////////////////////////
+//
 // Generic window object; definition in WinShim library
 
 class Window

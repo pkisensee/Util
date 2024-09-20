@@ -15,5 +15,21 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "Util.h"
+#include "Log.h"
 
-// Currently all utility functionality is header-only
+using namespace PKIsensee;
+
+bool Util::FailureHandler( const char* expr, const char* fileName, int lineNum, bool doThrow )
+{
+  Util::DebugBreak(); // break into debugger if available
+
+  // log the error
+  static constexpr int kFailureMsgLength = 2048;
+  char msg[ kFailureMsgLength ];
+  sprintf_s( msg, kFailureMsgLength, "Failed check '%s' in %s line %d\n", expr, fileName, lineNum );
+  PKLOG_ERR( msg );
+
+  if( doThrow )
+    throw std::exception( msg );
+  return false;
+}

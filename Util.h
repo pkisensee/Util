@@ -35,6 +35,31 @@ namespace Util {
 
 ///////////////////////////////////////////////////////////////////////////////
 //
+// Portable struct/class byte packing. Usage:
+//
+// class/struct Name PK_PACKED_STRUCT
+// {
+// PK_START_PACK
+//   uint8_t  id;
+//   uint32_t size;
+//   // etc.
+// PK_END_PACK
+// };
+
+#if defined(_MSC_VER)
+  // Visual Studio
+  #define PK_PACKED_STRUCT
+  #define PK_START_PACK __pragma( pack(push,1) )
+  #define PK_END_PACK   __pragma( pack(pop) )
+#else
+  // Most every other compiler on the planet
+  #define PK_PACKED_STRUCT __attribute__(packed)
+  #define PK_START_PACK
+  #define PK_END_PACK
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+//
 // Concepts
 
 template <typename ValType>

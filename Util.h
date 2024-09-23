@@ -37,12 +37,12 @@ namespace Util {
 //
 // Portable struct/class byte packing. Usage:
 //
-// class/struct Name PK_PACKED_STRUCT
+// class/struct PK_PACKED_STRUCT Name
 // {
 // PK_START_PACK
+//   // data members go here
 //   uint8_t  id;
 //   uint32_t size;
-//   // etc.
 // PK_END_PACK
 // };
 
@@ -53,7 +53,7 @@ namespace Util {
   #define PK_END_PACK   __pragma( pack(pop) )
 #else
   // Most every other compiler on the planet
-  #define PK_PACKED_STRUCT __attribute__(packed)
+  #define PK_PACKED_STRUCT __attribute__((__packed__))
   #define PK_START_PACK
   #define PK_END_PACK
 #endif

@@ -407,7 +407,7 @@ constexpr T PackBits( T sourceInt )
       maskHighBits |= ( kOne << (kEight-1-i) );
 
     T highBitsSet{ T( 0 ) };
-    for( auto i = 0; i < sizeof( T ); ++i )
+    for( size_t i = 0; i < sizeof( T ); ++i )
     {
       highBitsSet |= maskHighBits;
       maskHighBits <<= kEight;
@@ -421,12 +421,12 @@ constexpr T PackBits( T sourceInt )
     // Pack each kBitsPerByte into the result
     // A 7-bit mask would look like 0b1111111 == 0x7F
     auto maskLowBits = kZero;
-    for( auto i = 0; i < kBitsPerByte; ++i )
+    for( size_t i = 0; i < kBitsPerByte; ++i )
       maskLowBits |= ( kOne << T( i ) );
 
     // The real work happens here
     auto result = kZero;
-    for( auto i = 0; i < sizeof( T ); ++i )
+    for( size_t i = 0; i < sizeof( T ); ++i )
     {
       result |= ( sourceInt & maskLowBits ) >> ( i * kHighBits );
       maskLowBits <<= kEight;
@@ -456,20 +456,20 @@ constexpr T UnpackBits( T sourceInt )
     return sourceInt;
   else
   {
-    constexpr auto kZero = T( 0 );
-    constexpr auto kOne = T( 1 );
-    constexpr auto kEight = T( CHAR_BIT );
-    constexpr auto kHighBits = kEight - kBits;
+    constexpr T kZero = T( 0 );
+    constexpr T kOne = T( 1 );
+    constexpr T kEight = T( CHAR_BIT );
+    constexpr T kHighBits = kEight - kBits;
 
     // Unpack each kBits into the result
     // A 7-bit mask would look like 0b1111111 == 0x7F
-    auto mask = kZero;
-    for( auto i = 0; i < kBits; ++i )
+    T mask = kZero;
+    for( size_t i = 0; i < kBits; ++i )
       mask |= ( kOne << i );
 
     // The real work happens here
-    auto result = kZero;
-    for( auto i = 0; i < sizeof( T ); ++i )
+    T result = kZero;
+    for( size_t i = 0; i < sizeof( T ); ++i )
     {
       result |= ( sourceInt & mask ) << ( i * kHighBits );
       mask <<= kBits;

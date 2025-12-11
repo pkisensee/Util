@@ -89,7 +89,8 @@ using FileList = std::vector<std::filesystem::path>;
 uint32_t GetLastError();
 void DebugBreak();
 std::string GetRegistryValue( const std::string& regPath, const std::string& regEntry );
-void StartProcess( const std::string& commandLine ); // e.g. "notepad.exe foo.log"
+bool StartProcess( const std::string& commandLine ); // e.g. "notepad.exe foo.log"
+bool StartShell( const std::string& verb, const std::string& file ); // e.g. "open" "file.pdf"
 char GetKeyReleased();
 FileList GetFileDialog( const Window& parent );
 
@@ -403,7 +404,7 @@ constexpr T PackBits( T sourceInt )
     // Check the empty bits by creating a simple mask
     // A 7-bit mask would like like 0b10000000 == 0x80
     auto maskHighBits = kZero;
-    for( auto i = 0; i < kHighBits; ++i )
+    for( size_t i = 0; i < kHighBits; ++i )
       maskHighBits |= ( kOne << (kEight-1-i) );
 
     T highBitsSet{ T( 0 ) };
